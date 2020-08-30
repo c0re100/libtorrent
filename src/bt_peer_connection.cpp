@@ -36,6 +36,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <memory> // unique_ptr
 #include <vector>
 #include <functional>
+#include <regex>
 
 #ifndef TORRENT_DISABLE_LOGGING
 #include "libtorrent/hex.hpp" // to_hex
@@ -3187,6 +3188,14 @@ namespace {
 #endif
 			peer_id pid;
 			std::copy(recv_buffer.begin(), recv_buffer.begin() + 20, pid.data());
+
+			// Let us check the peer id first
+			// -(XL|SD|XF|QD|BN|DL)(\\d+)-
+			std::string peerPrefix = pid.data();
+			if (std::regex_match(peerPrefix.substr(0,8), std::regex("-(XL|SD|XF|QD|BN|DL)(\\d+)-"))) {
+				disconnect(errors::peer_banned, operation_t::bittorrent);
+				return;
+			}
 
 			// now, let's see if this connection should be closed
 			peer_connection* p = t->find_peer(pid);
